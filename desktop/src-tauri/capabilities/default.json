@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "默认能力：核心默认权限。窗口加载远程网关 /ui/，远程页面不调用 Tauri 命令，故无需额外权限。",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=Tavily multi-key aggregation gateway (HTTP + MCP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 部署目录，按实际情况修改
+WorkingDirectory=/opt/juhe_api
+ExecStart=/opt/juhe_api/.venv/bin/uvicorn app:app --host YOUR_GATEWAY_HOST --port 8000
+Restart=always
+RestartSec=5
+# 内存受限服务器：单 worker 单进程
+Environment=PYTHONUNBUFFERED=1
+# 如果 .env 未生效可在此显式配置（与 .env 二选一即可）
+# Environment=TAVILY_KEYS=tvly-xxxxxxx1,tvly-xxxxxxx2
+# Environment=GATEWAY_TOKEN=
+
+[Install]
+WantedBy=multi-user.target

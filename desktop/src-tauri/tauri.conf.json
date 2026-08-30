@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tavily Pool Gateway",
+  "version": "0.1.0",
+  "identifier": "com.example.tavily-pool-gateway",
+  "build": {
+    "frontendDist": "./static"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.ico", "icons/128x128.png", "icons/32x32.png"]
+  }
+}

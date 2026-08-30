@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tavily Pool Gateway 控制台</title>
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<div class="app">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="-9 -7 118 126" aria-hidden="true"><path d="M15 0 C15 42 38 58 47 78"/><path d="M85 0 C85 42 62 58 53 78"/><path d="M50 0 L50 88"/><circle cx="50" cy="99" r="7" fill="currentColor" stroke="none"/></svg></div>
+      <div class="brand-text">
+        <div class="brand-name">Tavily Pool</div>
+        <div class="brand-sub">Gateway Console</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-page="overview">
+        <span class="nav-ico"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg></span>概览
+      </button>
+      <button class="nav-item" data-page="search">
+        <span class="nav-ico"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 L14 14"/></svg></span>搜索测试
+      </button>
+      <button class="nav-item" data-page="keys">
+        <span class="nav-ico"><svg viewBox="0 0 16 16"><circle cx="5.5" cy="5.5" r="3"/><path d="M8 8 L14 14 M11.5 11.5 L13.5 9.5 M9.5 9.5 L11 8"/></svg></span>密钥管理
+      </button>
+      <button class="nav-item" data-page="guide">
+        <span class="nav-ico"><svg viewBox="0 0 16 16"><path d="M3 4 C3 2.9 3.9 2 5 2 H13 V12 H5 C3.9 12 3 12.9 3 14 Z"/><path d="M3 14 C3 12.9 3.9 12 5 12 H13"/></svg></span>接入指南
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="conn">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span class="conn-text" id="conn-text">连接中…</span>
+      </div>
+      <div class="quota-mini">
+        <div class="quota-mini-num" id="total-remaining-mini">--</div>
+        <div class="quota-mini-label">可用 credits</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主区 -->
+  <main class="main">
+    <header class="topbar">
+      <h1 class="page-title" id="page-title">概览</h1>
+      <div class="topbar-right">
+        <span class="gateway-tag" id="gateway-tag">网关就绪</span>
+        <button class="btn btn-ghost" id="btn-refresh">刷新</button>
+      </div>
+    </header>
+
+    <!-- 离线横幅 -->
+    <div class="offline-banner hidden" id="offline-banner">
+      网关不可达。若是本地模式，请先启动：<code>python -m uvicorn app:app --host 0.0.0.0 --port 8000</code>
+    </div>
+
+    <!-- 概览 -->
+    <section class="page active" id="page-overview">
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">可用 credits</div>
+          <div class="stat-num" id="stat-total">--</div>
+          <div class="stat-sub" id="stat-total-sub">健康 key 合计</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">key 总数 / 健康</div>
+          <div class="stat-num"><span id="stat-keys">--</span><span class="stat-dim" id="stat-keys-total">/--</span></div>
+          <div class="stat-sub" id="stat-month">计费月 --</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月已消耗</div>
+          <div class="stat-num" id="stat-used">--</div>
+          <div class="stat-sub">本地记账 + 定时校准</div>
+        </div>
+      </div>
+      <div class="card-grid" id="key-cards"></div>
+      <div class="empty-state hidden" id="empty-state">
+        <div class="empty-art">
+          <svg viewBox="-9 -7 118 126" aria-hidden="true">
+            <path d="M15 0 C15 42 38 58 47 78"/>
+            <path d="M85 0 C85 42 62 58 53 78"/>
+            <path d="M50 0 L50 88"/>
+            <circle cx="50" cy="99" r="7" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <div class="empty-title">还没有 API Key</div>
+        <div class="empty-desc">
+          添加一个或多个 Tavily API key 后，网关会自动轮询使用，
+          每个账号每月 1000 credits 免费额度。额度用完自动切换下一个。
+        </div>
+        <button class="btn btn-primary" id="btn-empty-add">去添加 Key</button>
+      </div>
+    </section>
+
+    <!-- 搜索测试 -->
+    <section class="page" id="page-search">
+      <div class="panel">
+        <div class="search-form">
+          <input type="text" id="search-query" class="input" placeholder="输入搜索词，如：tailscale pricing" />
+          <select id="search-depth" class="input input-sm">
+            <option value="basic">basic（1 credit）</option>
+            <option value="advanced">advanced（2 credits）</option>
+          </select>
+          <select id="search-max" class="input input-sm">
+            <option value="3">3 条</option>
+            <option value="5" selected>5 条</option>
+            <option value="10">10 条</option>
+          </select>
+          <button class="btn btn-primary" id="btn-search">搜索</button>
+        </div>
+        <div class="search-meta hidden" id="search-meta"></div>
+      </div>
+      <div id="search-results"></div>
+    </section>
+
+    <!-- 密钥管理 -->
+    <section class="page" id="page-keys">
+      <div class="panel">
+        <div class="panel-title">添加 API Key</div>
+        <p class="panel-desc">粘贴一个 Tavily API key。提交后立即入池、持久化（写入 api.txt）并校准真实额度。</p>
+        <input type="text" id="add-key-input" class="input" placeholder="tvly-xxxxxxxx" autocomplete="off" spellcheck="false" />
+        <div class="form-actions">
+          <button class="btn btn-primary" id="btn-add-keys">添加到池</button>
+          <span class="form-msg" id="add-keys-msg"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">key 池明细</div>
+        <table class="table" id="keys-table">
+          <thead>
+            <tr><th>名称</th><th>状态</th><th>已用 / 上限</th><th>剩余</th><th>用量</th><th>操作</th></tr>
+          </thead>
+          <tbody id="keys-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 接入指南 -->
+    <section class="page" id="page-guide">
+      <div class="panel">
+        <div class="panel-title">HTTP 接入（Tavily SDK 兼容）</div>
+        <p class="panel-desc">把 SDK 的 base URL 指向本网关即可，无需配置任何 Tavily key（网关自动注入池内 key）。</p>
+        <div class="code-block">
+          <div class="code-head"><span>Python</span><button class="btn btn-ghost btn-copy" data-copy="code-py">复制</button></div>
+          <pre id="code-py">from tavily import TavilyClient
+
+client = TavilyClient(
+    api_key="any",                       # 任意非空即可
+    base_url="http://YOUR_GATEWAY:8000/v1",
+)
+client.search("hello")</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>cURL</span><button class="btn btn-ghost btn-copy" data-copy="code-curl">复制</button></div>
+          <pre id="code-curl">curl -X POST http://YOUR_GATEWAY:8000/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "hello world", "max_results": 5}'</pre>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">MCP 接入（AI 客户端）</div>
+        <p class="panel-desc">支持 MCP 的客户端（Codex / Hermes / Cursor 等）直接添加以下 streamable-http 地址，工具自动注册（tavily_search / tavily_extract 等 7 个）。</p>
+        <div class="code-block">
+          <div class="code-head"><span>MCP URL</span><button class="btn btn-ghost btn-copy" data-copy="code-mcp">复制</button></div>
+          <pre id="code-mcp">http://YOUR_GATEWAY:8000/mcp/</pre>
+        </div>
+        <p class="panel-desc">注意：地址末尾的 <code>/</code> 建议保留。当前页面的网关地址即为实际接入地址，把 YOUR_GATEWAY 替换为本网关主机。</p>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="app.js?v=6"></script>
+</body>
+</html>

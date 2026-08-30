@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>网关未连接</title>
+<style>
+  :root {
+    --bg:#FAF9F5; --panel:#F0EEE6; --border:#E8E5DC; --border-strong:#D9D5C8;
+    --text:#1F1E1D; --dim:#6E6B64; --accent:#C15F3C; --accent-hover:#A94F30;
+    --accent-soft:#F7E9E2; --err:#B54A35; --inset:#F5F3EC;
+    --serif: Georgia, "Times New Roman", "Songti SC", SimSun, serif;
+    --sans: "Segoe UI", system-ui, "Microsoft YaHei", sans-serif;
+    --mono: Consolas, ui-monospace, monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--sans); background:var(--bg); color:var(--text);
+         display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .box { width:580px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:34px 36px; }
+  h1 { font-family:var(--serif); font-size:20px; margin-bottom:10px; }
+  h1 .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--err); margin-right:10px; vertical-align:1px; }
+  p  { font-size:13px; color:var(--dim); line-height:1.8; margin-bottom:18px; }
+  ol { margin:0 0 20px 20px; font-size:12.5px; color:var(--dim); line-height:2.1; }
+  code { background:var(--inset); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-family:var(--mono); font-size:12px; color:var(--text); }
+  label { display:block; font-size:12.5px; color:var(--dim); margin-bottom:7px; }
+  .row { display:flex; gap:10px; }
+  input { flex:1; background:var(--inset); border:1px solid var(--border); border-radius:8px; color:var(--text);
+          padding:10px 13px; font-size:13.5px; outline:none; font-family:var(--sans); transition:border-color .18s, box-shadow .18s; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(193,95,60,.12); }
+  button { background:var(--accent); border:none; border-radius:8px; color:#fff; font-weight:600;
+           padding:10px 22px; font-size:13.5px; cursor:pointer; font-family:var(--sans); transition:background .18s; }
+  button:hover { background:var(--accent-hover); }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  .msg { margin-top:12px; font-size:12.5px; min-height:18px; }
+  .msg.ok { color:#6A8A5B; } .msg.err { color:var(--err); }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1><span class="dot"></span>无法连接聚合网关</h1>
+  <ol>
+    <li>本地模式：在项目目录运行 <code>python -m uvicorn app:app --host 127.0.0.1 --port 8000</code></li>
+    <li>远程模式：确认网关服务器已启动，且地址可达（Tailscale 内网）</li>
+  </ol>
+  <label for="gw">网关地址</label>
+  <div class="row">
+    <input id="gw" placeholder="http://127.0.0.1:8000" />
+    <button id="retry">连接</button>
+  </div>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+  const input = document.getElementById('gw');
+  const btn = document.getElementById('retry');
+  const msg = document.getElementById('msg');
+  input.value = localStorage.getItem('tavg-gateway') || 'http://127.0.0.1:8000';
+
+  btn.addEventListener('click', async () => {
+    const gw = input.value.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//.test(gw)) { msg.textContent = '地址需以 http:// 或 https:// 开头'; msg.className = 'msg err'; return; }
+    btn.disabled = true; btn.textContent = '探测中…'; msg.textContent = '';
+    try {
+      const r = await fetch(gw + '/health', { cache: 'no-store' });
+      if (r.ok) {
+        localStorage.setItem('tavg-gateway', gw);
+        msg.textContent = '已连接，正在打开控制台…'; msg.className = 'msg ok';
+        setTimeout(() => { location.href = gw + '/ui/'; }, 500);
+        return;
+      }
+      msg.textContent = '网关返回异常：HTTP ' + r.status; msg.className = 'msg err';
+    } catch (e) {
+      msg.textContent = '连接失败：网关不可达'; msg.className = 'msg err';
+    } finally {
+      btn.disabled = false; btn.textContent = '连接';
+    }
+  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') btn.click(); });
+</script>
+</body>
+</html>
